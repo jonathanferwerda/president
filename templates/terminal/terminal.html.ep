@@ -1,0 +1,18 @@
+<div id="terminal">
+	<div class="terminal_view" view="terminal" id="terminal_view" style="<% if ($settings->{'view'} ne 'terminal') { %>display:none;<% } %>position:absolute;overflow:scroll;font-size:20px;color:white;background-color:black;opacity:.9;height: 85%;width:100%; max-height:100%;">
+		<span style="color:black;background-color:yellow;">President: </span>Commands get processed by the server and the browser. Handle with care.<br>
+	</div>
+
+	<div class="terminal_view" view="errors" id="terminal_error_view" style="<% if ($settings->{'view'} ne 'errors') { %>display:none;<% } %>position:absolute;overflow:scroll;font-size:20px;color:white;background-color:black;opacity:.9;height: 85%;width:100%; max-height:100%;">
+		<span style="color:black;background-color:yellow;">President: </span>Error log<br>
+
+		<% foreach my $err ( @{$settings->{'errors'}} ) { %>
+			<span style="color:yellow"><span class="time" timestamp="<%= $err->{'timestamp'} %>"></span> <%= $err->{'code'} %>: <%= $err->{'msg'} %></span><br>
+		<% } %>
+	</div><br>
+	<div id="terminal_input" style="text-align:left;width:100%; bottom:0px; position:absolute; background-color:black;">
+		<input class="" style="font-size:22px;text-align:left;" id="terminal_console" placeholder="<%= $whoami . '@' . $hostname %>"></input>
+		<img src="/images/decipherable/code.png" class="little_thumb terminal_view_select" view="terminal">
+		<img src="/images/make believe/explosion.png" class="little_thumb terminal_view_select" view="errors">
+	</div>
+</div>

@@ -1,0 +1,1 @@
+<div class="text_editor" contenteditable="true" id="<%= $p_id %>" source_id="<%= $id %>" placeholder="<%= $placeholder %>"><%== $contents %></div>

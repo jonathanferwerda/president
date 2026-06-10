@@ -1,0 +1,138 @@
+<br>
+Anchor <input type="checkbox" class="anchor_all_settings" setting_type="misc">
+<br>
+<table>
+	<thead>
+		<th>Dev</th>
+		<th>Max Files</th>
+		<th>Photo Size</th>
+		<th>Scan Size</th>
+		<th>Thumb Size</th>
+		<th>Encryption Standard</th>
+		<th>Max Backups</div>
+	</thead>
+	<tbody>
+		<% foreach my $dt ( @gb::device_types ) { %>
+			<tr>
+				<td><h1><%= $dt %></h1></td>
+				<td>
+					<select id="max_files" class="misc_setting" device="<%= $dt %>" setting="max_files">
+						<% foreach my $n (0..5000) { %>
+							<option <% if ($settings->{$dt}->{'max_files'} eq $n) { %>selected="selected"<% } %>><%= $n %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="photo_size" class="misc_setting" device="<%= $dt %>" setting="photo_size">
+						<% foreach my $size (@{$photo_sizes}) { %>
+							<option <% if ($settings->{$dt}->{'photo_size'} eq $size ){ %>selected="selected"<% } %>><%= $size %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="scan_size" class="misc_setting" device="<%= $dt %>" setting="scan_size">
+						<% foreach my $size (@{$photo_sizes}) { %>
+							<option <% if ($settings->{$dt}->{'scan_size'} eq $size ){ %>selected="selected"<% } %>><%= $size %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="thumbnail_size" class="misc_setting" device="<%= $dt %>" setting="thumbnail_size">
+						<% foreach my $size (@{$thumbnail_sizes}) { %>
+							<option <% if ($settings->{$dt}->{'thumbnail_size'} eq $size ){ %>selected="selected"<% } %>><%= $size %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="encryption_standard" class="misc_setting" device="<%= $dt %>" setting="encryption_standard">
+						<% foreach my $s (@{$encryption_standards}) { %>
+							<option <% if ($settings->{$dt}->{'encryption_standard'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="max_backups" class="misc_setting" device="<%= $dt %>" setting="max_backups">
+						<% foreach my $s (1..100) { %>
+							<option <% if ($settings->{$dt}->{'max_backups'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>Download Location</th>
+				<th>Music Location</th>
+				<th>Photo Location</th>
+				<th>Document Location</th>
+				<th>Video Location</th>
+				<th>Scan Location</th>
+				<th>Rec Location</th>
+			</tr>
+			<tr>
+				<td>
+					<select id="download_location" class="misc_setting" device="<%= $dt %>" setting="download_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'download_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="music_location" class="misc_setting" device="<%= $dt %>" setting="music_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'music_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="photo_location" class="misc_setting" device="<%= $dt %>" setting="photo_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'photo_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="document_location" class="misc_setting" device="<%= $dt %>" setting="document_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'document_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="video_location" class="misc_setting" device="<%= $dt %>" setting="video_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'video_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="scan_location" class="misc_setting" device="<%= $dt %>" setting="scan_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'scan_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<td>
+					<select id="rec_location" class="misc_setting" device="<%= $dt %>" setting="rec_location">
+						<% foreach my $s (@{$folders}) { %>
+							<option <% if ($settings->{$dt}->{'rec_location'} eq $s ){ %>selected="selected"<% } %>><%= $s %></option>
+						<% } %>
+					</select>
+				</td>
+				<tr>
+					<% my @colours = @gb::misc_settings; %>
+					<% foreach my $k ( @colours ) { %>
+						<th><%= $k %></th>
+					<% } %>
+				</tr>
+				<tr>
+					<% foreach my $k ( @colours ) { %>
+						<td>
+							<input type="color" object="<%= $k %>" id="<%= $k %>_background_colour" app="appearance" device="<%= $dt %>" class="misc_setting" setting="<%= $k %>_background_colour" value="<%= $config->{$dt}->{$k}->{'background_colour'} %>">
+						</td>
+					<% } %>
+				</tr>
+
+			</tr>
+		<% } %>
+	</tbody>
+
+</table>
