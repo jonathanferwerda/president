@@ -1,4 +1,4 @@
-"President is a local automation server that lets me control my environment through events." - ChatGPT
+This software is in development, and chances are even after installation things won't work, because there's no instruction manual.
 
 # Android Installation:
 
