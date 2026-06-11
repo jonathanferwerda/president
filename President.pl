@@ -58,7 +58,7 @@ my $cache_dir = &home('~/') . '.president';
 
 require './gb.pl';
 app->secrets($gb::secret_maker);
-$gb::duty_time = &subs::rightNow();
+
 
 my $random_number;
 if (!$config->{'working_port'}) {

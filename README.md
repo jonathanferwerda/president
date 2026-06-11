@@ -1,4 +1,8 @@
-This software is in development, and chances are even after installation things won't work, because there's no instruction manual.
+So you know, this software is being actively developed, and may cause irreversible harm to your software, use at your own risk. It may also be updated and leave previous versions unusable without notice. I'll try not to let that happen, but it might. If you are concerned, don't run it, or run it in a container... or on an old device.
+
+No Warranty!
+
+That being said, here's how to install it!
 
 # Android Installation:
 
@@ -113,4 +117,7 @@ cd president
 Your default browser should automatically open with the database highlighted.
 Password: password
 
-This is alpha software, expect yourself to be frustrated most of the time... the handbook is in progress.
+Post Install Guide:
+<iframe width="560" height="315" src="https://youtu.be/QHtrkGNsKB8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+

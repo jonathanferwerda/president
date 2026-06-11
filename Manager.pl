@@ -959,7 +959,7 @@ sub appointment_writer($c,$app) {
 	}
 
 	my $warranty_holder = $app->{'timestamp'} > $app->{'server_time'} ? $app->{'timestamp'} : $app->{'server_time'};
-	$app->{'warranty'} = $app->{'warranty'} || &subs::ago_calc($init->{'warranty'},$warranty_holder);
+	$app->{'warranty'} = $app->{'warranty'} || &subs::ago_calc(($init->{'warranty'} || '-10y'), $warranty_holder);
 	$app->{'project'} = $settings->{'t_project'} unless $app->{'project'};
 	$app->{'pos'} = $settings->{'pos'} unless $app->{'pos'};
 
@@ -4001,43 +4001,81 @@ get '/manager/qrcode_generator' => sub($c) {
 	my $project = $c->param('project');
 	my $debriefer = $c->param('debriefer');
 	my $nic = $c->param('nic');
-	my $server_time = &subs::rightNow();
+	my $suds = $c->session('suds');
+	my $warranty = $c->param('warranty');
 
-	my ($db,$database,$sql) = &subs::database_grabber();
+	my $data = &qrcode_generator({
+		timestamp => $timestamp,
+		app => $app,
+		name => $name,
+		privilege => $privilege,
+		project => $project,
+		debriefer => $debriefer,
+		nic => $nic,
+		suds => $suds,
+		warranty => $warranty
+	});
+	&subs::db_insert('tickets', $data);
+	&subs::setting_setter({ app => 'box_office', setting => 'last_privilege', value => $privilege });
+	&subs::setting_setter({ app => 'box_office', setting => 'last_nic', value => $nic });
+	&subs::setting_setter({ app => 'box_office', setting => 'last_name', value => $name });
+	$c->render(json => $data);
+};
+
+sub qrcode_generator($params) {
+	my $timestamp = $params->{'timestamp'} || &subs::rightNow();
+	my $app = $params->{'app'};
+	my $name = $params->{'name'};
+	my $project = $params->{'project'};
+	my $debriefer = $params->{'debriefer'};
+	my $nic = $params->{'nic'};
+	my $suds = $params->{'suds'};
+	my $warranty = $params->{'warranty'};
+	my $privilege = $params->{'privilege'};
+	my $db = $params->{'db'};
+	my $database = $params->{'database'};
+	my $sql = $params->{'sql'};
+
+
+	$log->info($suds);
+	my $server_time = &subs::rightNow();
+	unless ($db) {
+		($db,$database,$sql) = &subs::database_grabber('new');
+	}
 	my $random_password = &subs::random_string_creator(40);
 	my $sj = { ts => $timestamp, p => &subs::random_string_creator(25), uuid => &subs::random_string_creator(10) };
 
 	my $secret_json = encode_json $sj;
-	my $suds = &subs::note_encrypter($sj->{'p'}, $c->session('suds'));
+	my $suds = &subs::note_encrypter($sj->{'p'}, $suds);
 	my $secret = &subs::note_encrypter($random_password, $secret_json);
 	$secret = url_escape `echo "$secret" | base64 -w 0`;
 
 	my $uuid = $sj->{'uuid'};
 
 	my $domain;
-	if ($nic eq &subs::config_reader()->{'domain'}) {
-		$domain = $nic;
+	unless ($params->{'db'}) {
+		if ($nic eq &subs::config_reader()->{'domain'}) {
+			$domain = $nic;
+		}
+		else {
+			my $x = &subs::device_lister($timestamp, '')->[0]->{'address'};
+			$domain = $x->{$nic}->{'ip'};
+		}
 	}
 	else {
-		my $x = &subs::device_lister($timestamp, '')->[0]->{'address'};
-		$domain = $x->{$nic}->{'ip'};
+		$domain = '127.0.0.1';
 	}
 	my $port = $ENV{PORT_AHOY};
 	if ($device eq 'server') {
 		$port = 443;
 	}
 	my $url = 'https://' . $domain . ':' . $ENV{'PORT_DOCK'} . '/box_office/' . $sj->{'uuid'} . '?s=' . $secret;
-	my $warranty = $c->param('warranty') || &subs::setting_grabber({ app => 'box_office', setting => 'warranty' });
-	
-	&subs::setting_setter({ app => 'box_office', setting => 'warranty', value => $warranty });
+	my $warranty = $warranty || &subs::setting_grabber({ app => 'box_office', setting => 'warranty' });
+	unless ($params->{'db'}) {
+		&subs::setting_setter({ app => 'box_office', setting => 'warranty', value => $warranty });
+	}
 	$warranty = &subs::ago_calc($warranty,$timestamp);
 	my $duration = $warranty - $timestamp;
-	&appointment_writer($c,{
-		app => 'name',
-		project => $project,
-		timestamp => $timestamp,
-		warranty => $warranty
-	});
 
 	my $qr = `qrencode -o - $url`;
 	my $image = 'data:image/png;base64,' . encode_base64($qr);
@@ -4063,13 +4101,8 @@ get '/manager/qrcode_generator' => sub($c) {
 		suds => $suds,
 		debriefer => $debriefer
 	};
-	&subs::db_insert('tickets', $data);
-	&subs::setting_setter({ app => 'box_office', setting => 'last_privilege', value => $privilege });
-	&subs::setting_setter({ app => 'box_office', setting => 'last_nic', value => $nic });
-	&subs::setting_setter({ app => 'box_office', setting => 'last_name', value => $name });
-
-	$c->render(json => $data);
-};
+	return $data;
+}
 
 sub qrcode_updater($c) {
 	my ($db,$database,$sql) = &subs::database_grabber();
@@ -5723,7 +5756,7 @@ sub manager_reset($c) {
 
 	my $warranty_holder = $timestamp;
 	$warranty_holder = $server_time if $server_time > $timestamp;
-	my $warranty = &subs::ago_calc(($c->param('warranty') || &subs::setting_grabber({ app => $app, setting => 'warranty' })),$warranty_holder);
+	my $warranty = &subs::ago_calc(($c->param('warranty') || &subs::setting_grabber({ app => $app, setting => 'warranty' }) || '-10y'),$warranty_holder);
 	$returner->{'warranty'} = $warranty;
 	my $usual_schedule = &subs::setting_grabber({ app => $app, setting => 'schedule' });
 	my $schedule = &schedule_maker($c,$c->param('schedule'),$timestamp);
@@ -8251,6 +8284,22 @@ post '/manager/configure/new_database' => sub($c) {
 			$db->insert('settings', $s);
 		}
 	}
+
+	my $data = &qrcode_generator({
+		timestamp => $timestamp + 1,
+		app => '__president',
+		name => 'citizen',
+		privilege => 'citizen',
+		project => 'personal',
+		debriefer => '{}',
+		nic => 'lo',
+		suds => $secret,
+		warranty => '-100y',
+		db => $db,
+		database => $database
+	});
+	$db->insert('tickets', $data);
+
 	my $backup = `sqlite3 $database ".backup '$database.1.db'"`;
 	my $encryption_standard = &subs::setting_grabber({ app => 'misc', setting => 'encryption_standard' } ) || "aes-256-ctr";
 	my $encrypt =	`openssl enc -e -k "$secret" -$encryption_standard -pbkdf2 -in $database.1.db -out $enc_file`;
@@ -16069,6 +16118,7 @@ sub remote_machine_reconnector($c) {
 	my $browser_tab_id = $c->param('browser_tab_id');
 	my $browser_tab = $c->param('browser_tab');
 	my $ws_auth;
+	$log->info('in the reconnector');
 	eval {
 		my $remote_machines = &subs::db_select('remote_machines', undef, { })->hashes;
 		foreach my $rm ( @{$remote_machines} ) {
@@ -16080,6 +16130,7 @@ sub remote_machine_reconnector($c) {
 
 			if ($ping =~ /ttl/) {
 				$rm = &remote_useragent_maker({ ip => $ip, signatorial => $rm->{'signatorial'}, rm => $rm });
+				$log->info('made signatorial');
 				my $manager = $rm->{'manager'};
 				my $port = $rm->{'port'};
 				$manager =~ s/:$port/:3000/gi;
@@ -16088,6 +16139,7 @@ sub remote_machine_reconnector($c) {
 				}
 
 				if (!eval { return decode_json $rm->{'res'}->body }) {
+					$log->info('got bod');
 					$ping_test = 'no';
 					if ($rm->{'data'}->{'database'}) {
 						my $auuid = &subs::random_string_creator();
@@ -16166,6 +16218,7 @@ sub remote_machine_reconnector($c) {
 							gimme => $gimme
 						};
 						if ($ENV{PORT_ENV} eq 'production' && $rj->{'env'} eq 'production') {
+							$log->info('upgrading');
 						#	Mojo::IOLoop->subprocess->run_p(sub {
 								&remote_upgrade($c,$params);
 						#	});

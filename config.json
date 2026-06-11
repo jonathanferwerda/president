@@ -29,7 +29,6 @@
    "logfile" : "~/manager.log",
    "open_browser" : "no",
    "port" : "3000",
-   "production_server" : "hypnotoad",
    "scanners" : [
       {
          "address" : "hpaio:/net/officejet_3830_series?ip=192.168.0.74",
@@ -103,7 +102,7 @@
          "url" : "https://en.wikipedia.org/wiki/"
       }
    ],
-   "signatorial" : "/home/jawn/Pictures/garage_office/2RpQjFu7mbBXHsUPFBYE.jpg.enc",
+   "signatorial" : "/home/jawn/Pictures/20190106_082404.jpg",
    "ssh_port" : "8022",
    "start_dir" : "~/",
    "working_port" : "45545",

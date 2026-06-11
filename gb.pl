@@ -12,7 +12,7 @@ package gb;
 our $pwd = `pwd`;
 chomp $pwd;
 our $count = 0;
-our $duty_time;
+our $duty_time = &subs::rightNow();
 our $ws = {};
 our $remote_ws = {};
 our $mailws = {};

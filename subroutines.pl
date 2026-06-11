@@ -3281,8 +3281,14 @@ sub db_delete() {
 
 	my ($db,$database,$sql) = &database_grabber();
 	my ($lid,$success);
-	$success = $db->delete($table, $params);
 
+	if ($table && ref $params eq ref {}) {
+		$success = $db->delete($table, $params);
+	}
+	else {
+		$log->info('Bad Delete ' . $table);
+		$log->info(Dumper $params);
+	}
 	return $success;
 }
 
@@ -3968,18 +3974,24 @@ sub log_reader_file_preparer() {
 
 sub remote_machine_negotiator() {
 	my $data = shift;
+	$log->info(Dumper $data);
 	$gb::suds = &suds_grabber();
+	$log->info('before c');
 	my $c = app->build_controller;
+	$log->info('after c');
 	$c->session('suds' => $gb::suds);
 	$c->session('gimme' => $data->{'gimme'});
 
 
 	my $remote_upgrade = &subs::setting_grabber({ app => '__president', setting => 'remote_upgrade' });
-	my $remote_connect_timer =  &subs::setting_grabber({ app => '__president', setting => 'remote_connect_timer' });
+	my $remote_connect_timer =  &subs::setting_grabber({ app => '__president', setting => 'remote_connect_timer' }) || 0;
+	$log->info($remote_upgrade . ' ' . $remote_connect_timer);
 	if ($remote_connect_timer + (60 * 7 * 1000) < &subs::rightNow()) {
+		$log->info('setting remote upgrade to null');
 		&subs::setting_setter({ app => '__president', setting => 'remote_upgrade', value => '' });
 	}
-	if ($remote_upgrade ne 'running' && $remote_connect_timer + 30000 < &subs::rightNow()) {
+	if ($remote_upgrade ne 'running' && $remote_connect_timer + 10000 < &subs::rightNow()) {
+		$log->info('running remote machine reconnector');
 		&Manager::remote_machine_reconnector($c);
 	}
 	#&system_monitor({
@@ -4014,13 +4026,23 @@ sub system_monitor() {
 
 sub suds_grabber() {
 	my $duty_time = &subs::setting_grabber({ app => '__president', setting => 'remote_duty' });
-	unless ($duty_time == $gb::duty_time && $gb::suds) {
+	$log->info('DT ' . $duty_time . ' GBDT: ' . $gb::duty_time);
+	if ($duty_time eq '' || !$duty_time || $duty_time != $gb::duty_time || !$gb::duty_time) {
+		$log->info('no dt');
+		my ($db,$database,$sql) = &subs::database_grabber('new');
+		if (!$gb::duty_time) {
+			my $duty_file = &subs::home('~/.president/on_duty');
+			$gb::duty_time = read_file($duty_file);
+			$log->info('writing duty time');
+		}
+		$log->info('about to set');
 		&subs::setting_setter({ app => '__president', setting => 'remote_duty', value => $gb::duty_time });
-
+		$log->info('about to tick');
 		my $tick = &subs::db_query('select * from tickets where status=? order by server_time desc', 'active');
 		my $ticke = $tick->hashes;
 		my $ticket = $ticke->[0];
-
+		$log->info('got ticket');
+		$log->info(Dumper $ticket);
 		my $v = $ticket->{'verification'};
 		my $secret = $ticket->{'secret'};
 		my $ver = url_unescape `echo "$secret" | base64 --decode`;
@@ -4029,7 +4051,9 @@ sub suds_grabber() {
 		$secret = &subs::decrypter($vrai->{'p'},&subs::db_select('security', ['credential'], { level => 1 })->hash->{credential});
 		my $suds = &subs::note_decrypter($vrai->{'p'}, $ticket->{'suds'});
 		$gb::suds = $suds;
+		$log->info('new suds: ' . $suds);
 	}
+	$log->info('suds bypassed ');
 	return $gb::suds;
 }
 
