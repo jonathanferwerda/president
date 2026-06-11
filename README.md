@@ -118,7 +118,5 @@ Your default browser should automatically open with the database highlighted.
 Password: password
 
 Post Install Guide:
-
-[<img src="https://img.youtube.com/vi/QHtrkGNsKB8/hqdefault.jpg" width="600" height="300"
-/>](https://youtu.be/QHtrkGNsKB8)
+[![Watch the video](https://img.youtube.com/vi/QHtrkGNsKB8/hqdefault.jpg)](https://www.youtube.com/embed/QHtrkGNsKB8)
 
