@@ -1,6 +1,4 @@
-So you know, this software is being actively developed, and may cause irreversible harm to your software, use at your own risk. It may also be updated and leave previous versions unusable without notice. I'll try not to let that happen, but it might. If you are concerned, don't run it, or run it in a container... or on an old device.
-
-No Warranty!
+This is an organization and automation tool.
 
 That being said, here's how to install it!
 
