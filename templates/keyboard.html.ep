@@ -1,4 +1,5 @@
 <span class="typewriter" style="">
+
 	<% if ($toggle eq 'keyboard') { %>
 		<br>
 		<span class="keyboard bc" id="keyboard" style="background-color:<%= $config->{$device}->{'keyboard'}->{'background_colour'} %>;">
@@ -109,63 +110,31 @@
 	<% } %>
 	<% if ($toggle eq 'remote_control') { %>
 		<span class="keyboard bc" id="remote_control" style="background-color:<%= $config->{$device}->{'remote_control'}->{'background_colour'} %>">
+			<% my $remote_control = &subs::setting_grabber({ app => 'me', setting => 'remote_control_machine' }); %>
+			<% my $remote_machines = &subs::db_select('remote_machines', undef, { connection => 'active' })->hashes; %>
 
-
-			<img class="medium_thumb jonathan" id="store_toggle" src="<%= $gb::known_appts->{'resident'}->{'icon'} %>">
-			<img class="jonathan" src="/images/decipherable/chart.png" id="budget" style="background-color:orange;"></img>
-			<img id="travel_toggle" src="/images/decipherable/aeroplane.png" class="jonathan gps"></img>
-			<img id="relational_toggle" src="/images/make believe/strawbeery.png" class="jonathan relational">
-			<img id="mailbox_toggle" src="/images/decipherable/envelope.png" class="jonathan mail">
+			<select id="remote_control_machine_select" value="<%= $remote_control %>" onchange="settingSetter({ 'app': 'me', 'setting': 'remote_control_machine', 'value': this.value });keyboardMaker('remote_control','on')" style="vertical-align:top;">
+				<option value="" <% if ( $remote_control eq '' || !$remote_control || !grep { $_->{'ip'} eq $remote_control } @{$remote_machines}) { %>selected<% } %>>Me</option>
+				<% foreach my $rm ( @{$remote_machines} ) { %>
+					<option value="<%= $rm->{'ip'} %>" <% if ( $rm->{'ip'} eq $remote_control ) { %>selected<% } %>><%= $rm->{'domain'} || $rm->{'ip'} %></option>
+				<% } %>
+			</select>
+			<img id="main_logo" class="jonathan little_thumb remote_control_configuration"  src="/images/decipherable/wrench.png"></img>
 			<br>
-			<% if ($device eq 'mobile') { %>
-				<img class="voice_prompt medium_thumb jonathan" src="/images/decipherable/speech to text.png" />
-				<img class="jonathan torch_toggle" src="/images/decipherable/nightlight.png"></img>
-				<img class="jonathan" src="/images/make believe/phone_sms.png" id="sms_list_check"></img>
-				<br>
-			<% } %>
+			<div id="remote_control_view">
+				<% if ($remote_control eq '' || !$remote_control || !grep { $_->{'ip'} eq $remote_control } @{$remote_machines}) { %>
+					ME!<br>
 
-			<img id="music_toggle" src="/images/make believe/music.png" class="jonathan music"></img>
-			<img id="embedded_toggle" src="/images/decipherable/microchip.png" class="jonathan embedded"></img>
-			<span><img id="ticketmaker" class="jonathan little_thumb" src="/images/decipherable/ticket.png"></span>
-			<img id="cards_toggle" src="/images/decipherable/cards.png" class="jonathan cards">
-			<img class="jonathan" src="/images/make believe/web_button.png" id="web_toggle"></img>
-			<br>
-			<img class="jonathan" id="backup_now" src="/images/decipherable/diskette.png" ></img>
-			<img id="security_toggle" src="/images/make believe/badge.png" class="jonathan security"></img>
-			<img id="terminal_toggle" src="/images/decipherable/code.png" class="jonathan terminal"></img>
-			<img id="ide_toggle" class="jonathan ide" src="/images/make believe/monitor.png"></img>
-			<img class="jonathan little_thumb" id="upload" src="/images/make believe/up.png" />
-			<br>
-			<img id="image_toggle" src="/images/decipherable/gallery.png" class="jonathan gallery"></img>
-			<img id="synth_toggle" src="/images/decipherable/piano.png" class="jonathan synth"></img>
-			<img id="editor_toggle" src="/images/decipherable/love letter.png" class="jonathan editor"></img>
-			<img id="marker_toggle" class="jonathan marker" src="/images/decipherable/marker.png"></img>
+				<% } else { %>
 
-			<br>
+					<%= $remote_control %>
+				<% } %>
 
-			<img class="jonathan" src="/images/decipherable/stop sign.png" id="stop_all"></img>
-			<img id="twirl_toggle" class="jonathan twirl" src="/images/decipherable/tetris.png"></img>
-			<img id="studio_toggle" src="/images/decipherable/mixer.png" class="jonathan mixer"></img>
-			<img class="handbook medium_thumb jonathan" id="handbook_toggle" src="/images/decipherable/handbook.png">
-			<img class="home medium_thumb jonathan" id="home_toggle" src="<%= $gb::known_appts->{'guest'}->{'icon'} %>">
+				<br><span id="manager_file" style=""><%= $manager_file %></span>
+			</div>
+			<div id="remote_control_configuration" style="display:none;">
 
-
-
-			<script>
-				var search = $('#search').val();
-				$('.take_on_me').each(function(i,v) {
-					console.log(v);
-					var link = $(v).attr('href');
-					var route = link.split('?');
-
-					var route = route[0] + '?search=' + search
-					console.log(route);
-					$(v).attr('href', route);
-				});
-
-
-
-			<br><span id="manager_file" style=""><%= $manager_file %></span>
+			</div>
 		</span>
 
 	<% } %>

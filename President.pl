@@ -284,13 +284,11 @@ my $ws_tty_port = $tty_port + 1;
 		}
 		&Alarm::alarm_haircut() if $config->{'environment'} eq 'production';
 	});
-	threads->create(sub() {
-		while (1) {
-			if ($gb::budget_running == 0) {
-				$gb::budget_running = 1;
-				$gb::budget_running = &Alarm::budget_watcher();
-			}
-			sleep ($gb::timeouts->{'budget'});
+
+	Mojo::IOLoop->recurring($gb::timeouts->{'budget'} => sub () {
+		if ($gb::budget_running == 0) {
+			$gb::budget_running = 1;
+			$gb::budget_running = &Alarm::budget_watcher();
 		}
 	});
 	if ($device eq 'mobile') {
@@ -325,10 +323,8 @@ my $ws_tty_port = $tty_port + 1;
 		}
 	});
 	#threads->create(sub() {
-	#	my ($db,$database,$sql) = &subs::database_grabber('new');
-	#	$log->info($sql);
+
 		Mojo::IOLoop->recurring($gb::timeouts->{'remote_machine_sync'} => sub() {
-			$log->info('doing negotiator');
 			#if ($gb::syncing == 0) {
 				$gb::syncing = 1;
 				my $gimme;
@@ -358,7 +354,7 @@ my $ws_tty_port = $tty_port + 1;
 	my $house = Mojo::IOLoop->recurring($gb::timeouts->{'housekeeping'} => sub() {
 		if ($gb::housekeeping_running == 0) {
 			$gb::housekeeping_running = 1;
-			$gb::housekeeping_running = &Alarm::housekeeping();
+		#	$gb::housekeeping_running = &Alarm::housekeeping();
 		}
 	});
 

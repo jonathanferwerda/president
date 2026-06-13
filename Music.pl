@@ -101,7 +101,10 @@ get '/manager/music' => sub ($c) {
 	}
 	if ($unlock) {
 		if (secure_compare(&subs::note_decrypter($c->session('suds'), $unlock), &subs::note_decrypter($c->session('suds'), &subs::setting_grabber({ app => 'music', setting => 'combo_unlock' })) ) ) {
-			$permissive = 1;
+			my $padlock_sighting = eval { return decode_json &subs::setting_grabber({app => '__president', setting => 'padlock_contexts' }) } || [];
+			if (grep { $_ eq 'music' } @{$padlock_sighting}) {
+				$permissive = 1;
+			}
 		}
 	}
 	my $crate = &music_search({ settings => $settings, c => $c, search => $search, now_playing => {}, port => $port, misc_settings => $misc_settings });
@@ -277,7 +280,10 @@ sub music_search($data) {
 		$settings->{'artist'} = eval { return decode_json $settings->{'artist'} } || [];
 		$settings->{'album'} = eval { return decode_json $settings->{'album'} } || [];
 	}
-	$permissive = 1 if $settings->{'combo_unlock'};
+	my $padlock_sighting = eval { return decode_json &subs::setting_grabber({app => '__president', setting => 'padlock_contexts' }) } || [];
+	if (grep { $_ eq 'music' } @{$padlock_sighting}) {
+		$permissive = 1 if $settings->{'combo_unlock'};
+	}
 
 	my @folders;
 	if (scalar @{$settings->{'album'}} > 0) { 
@@ -513,7 +519,10 @@ post '/music/search' => sub ($c) {
 
 	if ($unlock) {
 		if (secure_compare(&subs::note_decrypter($c->session('suds'), $unlock), &subs::note_decrypter($c->session('suds'), &subs::setting_grabber({ app => 'gallery', setting => 'combo_unlock' })) ) ) {
-			$permissive = 1;
+			my $padlock_sighting = eval { return decode_json &subs::setting_grabber({app => '__president', setting => 'padlock_contexts' }) } || [];
+			if (grep { $_ eq 'music' } @{$padlock_sighting}) {
+				$permissive = 1;
+			}
 		}
 	}
 
@@ -544,7 +553,11 @@ post '/music/search' => sub ($c) {
 	$settings->{'album'} = eval { return decode_json $settings->{'album'} } || [];
 	my $crate;
 	if (scalar @{$list} > 0) {
-		my $permissive = 1 if $settings->{'combo_unlock'};
+		my $permissive = 0;
+		my $padlock_sighting = eval { return decode_json &subs::setting_grabber({app => '__president', setting => 'padlock_contexts' }) } || [];
+		if (grep { $_ eq 'music' } @{$padlock_sighting}) {
+			$permissive = 1 if $settings->{'combo_unlock'};
+		}
 		$crate = &song_maker({ c => $c, config => $config, port => $port, files => $list, settings => $settings, now_playing => $now_playing, same_order => $same_order, misc_settings => $misc_settings });
 	}
 	else {

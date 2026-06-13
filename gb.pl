@@ -59,7 +59,7 @@ our $capabilities = {
 
 our $timeouts = {
 	'alarm' => 2,
-	'alarm_haircut' => 60 * 1,
+	'alarm_haircut' => 10,
 	'housekeeping' => 60 * 60,
 	'websocket' => .5,
 	'budget' => 60 * 20,

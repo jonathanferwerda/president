@@ -8,11 +8,17 @@
 	</div>
 	<br><br><br><br>
 	<div class="security_view" view="padlock" style="width:100%;position:absolute;bottom:0px;<% unless ( $president->{'security_view'} eq 'padlock' ) { %>display:none;<% } %>">
-
+		<% my $padlock = &subs::db_query('select * from security where level=? limit 1', 'padlock')->hashes->[0]; %>
 		<%= include 'padlock', mode => 'security' %>
-
+		<% my $selected_contexts = $president->{'padlock_contexts'} || []; %>
+		<select id="padlock_contexts" multiple value="<%= join ',', @{$selected_contexts} %>" style="position:absolute;right:0px;bottom:40px;height:100px;">
+			<% foreach my $context ( qw/general gallery music/ ) { %>
+				<option value="<%= $context %>" <% if (grep { $_ eq $context } @{$selected_contexts}) { %>selected<% } %>><%= &subs::format_name($context) %></option>
+			<% } %>
+		</select>
+		<span id="padlock_set_status" status="<%= $padlock ? 'yes' : 'no' %>"></span>
 		<img src="/icons/trash.png" class="little_thumb" id="padlock_delete" 
-			style="position:absolute;right:0px;bottom:0px;<% unless (my $padlock = &subs::db_query('select * from security where level=? limit 1', 'padlock')->hashes->[0]) { %>display:none;<% } %>">
+			style="position:absolute;right:0px;bottom:0px;<% unless ($padlock) { %>display:none;<% } %>">
 	</div>
 
 	<div class="security_view" view="neighbour_link" style="<% unless ( $president->{'security_view'} eq 'neighbour_link' ) { %>display:none;<% } %>">

@@ -80,8 +80,14 @@ function pseudonymFreeSpaceFinder(type) {
 	});
 }
 
-$(document).on('click', '.keyboard.bc', function(i) {
-	keyboardDragEnabler($(this),i.target.id);
+$(document).on('click', '.keyboard.bc,.keyboard_tab', function(i) {
+	var keyboard = $(this);
+	var id = i.target.id;
+	if ($(this).hasClass('keyboard_tab')) {
+		keyboard = $(this).closest('.keyboard');
+		var id = keyboard.attr('id');
+	}
+	keyboardDragEnabler(keyboard,id);
 });
 
 function keyboardDragEnabler(k,id,state) {
@@ -497,7 +503,7 @@ async function keyboardMaker(toggle,state) {
 		$('#' + toggle).css(css);
 
 	}
-	if (!t.is(':visible') && !t.hasClass('keyboard')) {
+	if (!t.is(':visible') && !t.hasClass('keyboard') || state == 'on') {
 		$.ajax({ 
 			url: '/manager/keyboard',
 			type: 'POST',
@@ -511,20 +517,26 @@ async function keyboardMaker(toggle,state) {
 				browser_tab_id: bti
 			},
 			success: function(response) {
+
 				$('#' + toggle).remove();
 				$('#keyboard_container').append(response);
-				$('#' + toggle).show();
+				var t = $('#' + toggle);
+				t.show();
 				$('.typewriter').show();
 				$('#time_machine').val(localStorage.getItem('time_machine')	);
 				initializer();
 				if ((top <= $(window).height() && left <= $(window).width()) || bottom < h / 4) {
-					css['width'] = $('#' + toggle).width();
+					css['width'] = t.width();
 					//css['bottom'] = $('#pseudonym_home').height();
 					//css['top'] = undefined;
-					$('#' + toggle).css(css);
+					t.css(css);
 				}
-				$('#' + toggle).attr('claimed', 'yes');
-				$('#' + toggle).css({ 'border-left': 'solid 10px' });
+				t.attr('claimed', 'yes');
+				t.css({ 'border-left': 'solid 10px' });
+				var bg = t.css('background-color');
+				var h = t.html();
+				h = h + '<div class="keyboard_tab" style="border:solid;border-width:3px;border-radius:10px;background-color:' + bg + ';width:30px;height:15px;position:absolute;top:-11px;left:0px;"></div>';
+				t.html(h);
 			}
 		});
 	}

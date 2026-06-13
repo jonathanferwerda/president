@@ -4037,7 +4037,6 @@ sub qrcode_generator($params) {
 	my $sql = $params->{'sql'};
 
 
-	$log->info($suds);
 	my $server_time = &subs::rightNow();
 	unless ($db) {
 		($db,$database,$sql) = &subs::database_grabber('new');
@@ -5856,7 +5855,7 @@ sub manager_reset($c) {
 		});
 		&subs::setting_setter({ app => $app, setting => 'toggle', value => 'on' }) if $seen eq 'yes';
 		if ($stop_timestamp) {
-			&subs::intelligent_automation_toggle({ appt_uuid => $uuid, app => $app, 'state' => 'off', timestamp => $stop_timestamp + 3000 });		
+			&subs::intelligent_automation_toggle({ appt_uuid => $uuid, app => $app, 'state' => 'off', timestamp => $stop_timestamp });		
 		}
 
 	}
@@ -5957,7 +5956,7 @@ sub manager_reset($c) {
 					uuid => $o->{'uuid'}
 				});
 			}
-			&subs::intelligent_automation_toggle({ appt_uuid => $o->{'uuid'}, app => $app, 'state' => 'off', timestamp => $timestamp });		
+			&subs::intelligent_automation_toggle({ appt_uuid => $o->{'uuid'}, app => $app, 'state' => 'off', timestamp => $timestamp });
 			my $sources = &subs::db_select('appointments', undef, { source_uuid => $o->{'uuid'} })->hashes;
 			my $options = eval { return decode_json $o->{'options'} } || [];
 			my $model = eval { return decode_json $o->{'model'} } || {};
@@ -9466,7 +9465,7 @@ sub budget_calculator($data) {
 					if ($appt->{'type'} eq 'start' || $appt->{'type'} eq 'record') {
 						$appt->{'duration'} = $server_time - $appt->{'timestamp'};
 					}
-					$value += abs $appt->{'duration'};;
+					$value += abs $appt->{'duration'};
 				}
 				elsif ($circumstance eq 'occurences') {
 					$value += 1;
@@ -10600,7 +10599,7 @@ get '/manager/clipboard_getter' => sub ($c) {
 		$returner = `termux-clipboard-get`;
 	}
 	elsif ($device eq 'computer') {
-		$returner = `xclip -o`;
+		$returner = eval { return `xclip -o` };
 	}
 	$c->render(text => $returner);
 };
@@ -11192,6 +11191,10 @@ get '/manager/gallery' => sub ($c) {
 	$view = $settings->{'view'};
 	$count = $settings->{'count'};
 	my $unlock = $c->param('unlock') || $settings->{'combo_unlock'};
+	my $padlock_sighting = eval { return decode_json &subs::setting_grabber({app => '__president', setting => 'padlock_contexts' }) } || [];
+	unless ( grep { $_ eq 'gallery' } @{$padlock_sighting} ) {
+		$unlock = undef;
+	}
 	my $apps = eval { return decode_json $settings->{'apps'} } || [];
 	my $jfiles = $c->param('files');
 
@@ -13014,7 +13017,7 @@ sub security_initializer($c) {
 	if ($c->param('security_view')) {
 		$president->{'security_view'} = $c->param('security_view');
 	}
-
+	$president->{'padlock_contexts'} = eval { return decode_json $president->{'padlock_contexts'} } || [];
 	my $contents = $c->render_to_string(
 		president => $president,
 		template => 'security',
@@ -14164,6 +14167,7 @@ sub authentication_passer($c) {
 		return;
 	}
 	elsif ($authentication eq 'approved' && $c->session('server_time') > $server_time - 5100) {
+		$c->session('server_time' => $server_time);
 		return $authentication;
 	}
 
@@ -14196,13 +14200,21 @@ sub authentication_passer($c) {
 		unless (secure_compare $hardness, $suds) {
 			$authentication = 'revoked';
 		}
-		my $padlock = &subs::db_select('security', undef, { level => 'padlock' })->hashes;
+		my $pres_settings = &subs::setting_grabber({ app => '__president', settings => [ 'padlock_contexts', 'pl_time' ] });
+		my $padlock_sightings = eval { return decode_json $pres_settings->{'padlock_contexts'} } || [];
+		my $padlock = [];
+		my $padlock_time = $server_time;
+		if ( grep { $_ eq 'general' } @{$padlock_sightings} ) {
+			$padlock = &subs::db_select('security', undef, { level => 'padlock' })->hashes;
 		
-		my $activity_timeout = &subs::setting_grabber({ app => 'me', setting => 'activity_timeout' }) || '-2h';
-		$activity_timeout = &subs::time_abbrev_translator($activity_timeout);
-		my $padlock_time = &subs::decrypter($c->session('suds'), &subs::setting_grabber({ app => '__president', setting => 'pl_time' }) ) || 0;
+			my $activity_timeout = &subs::setting_grabber({ app => 'me', setting => 'activity_timeout' }) || '-2h';
+			$activity_timeout = &subs::time_abbrev_translator($activity_timeout);
 
-		$c->stash('pl_time' => $padlock_time);
+			$padlock_time = &subs::decrypter($c->session('suds'), $pres_settings->{'pl_time'} ) || 0;
+
+			$c->stash('pl_time' => $padlock_time);
+		}
+
 		if ($c->session('authentication') eq 'approved' && $server_time > $padlock_time && scalar @{$padlock} > 0) {
 			&lock_session($c);
 		}
@@ -16118,7 +16130,6 @@ sub remote_machine_reconnector($c) {
 	my $browser_tab_id = $c->param('browser_tab_id');
 	my $browser_tab = $c->param('browser_tab');
 	my $ws_auth;
-	$log->info('in the reconnector');
 	eval {
 		my $remote_machines = &subs::db_select('remote_machines', undef, { })->hashes;
 		foreach my $rm ( @{$remote_machines} ) {
@@ -16130,7 +16141,6 @@ sub remote_machine_reconnector($c) {
 
 			if ($ping =~ /ttl/) {
 				$rm = &remote_useragent_maker({ ip => $ip, signatorial => $rm->{'signatorial'}, rm => $rm });
-				$log->info('made signatorial');
 				my $manager = $rm->{'manager'};
 				my $port = $rm->{'port'};
 				$manager =~ s/:$port/:3000/gi;
@@ -16139,7 +16149,6 @@ sub remote_machine_reconnector($c) {
 				}
 
 				if (!eval { return decode_json $rm->{'res'}->body }) {
-					$log->info('got bod');
 					$ping_test = 'no';
 					if ($rm->{'data'}->{'database'}) {
 						my $auuid = &subs::random_string_creator();
@@ -16218,7 +16227,6 @@ sub remote_machine_reconnector($c) {
 							gimme => $gimme
 						};
 						if ($ENV{PORT_ENV} eq 'production' && $rj->{'env'} eq 'production') {
-							$log->info('upgrading');
 						#	Mojo::IOLoop->subprocess->run_p(sub {
 								&remote_upgrade($c,$params);
 						#	});
@@ -16641,7 +16649,6 @@ if ($ENV{PURPOSE} && ($ENV{PURPOSE} eq 'websocket' || ($ENV{PORT_ENV} eq 'develo
 
 		my $db_running = 0;
 		my $message_count = 0;
-		#$log->info(Dumper $last_message);
 		if ($db_running == 0) {
 
 			$db_running = 1;

@@ -90,7 +90,7 @@ $(document).on('touchmove', '.background', function(m) {
 			clotheslineScroller(x,y,mouseDiff);
 		}
 	}
-	else if ((y >= clothesLinePos['maxHeight'] && id == 'timeline') && ( clothesLinePos['startMove'] == undefined || clothesLinePos['startMove'] == 'canvas')) {
+	else if ((y >= clothesLinePos['maxHeight'] && (id == 'timeline' || id == 'clockface')) && ( clothesLinePos['startMove'] == undefined || clothesLinePos['startMove'] == 'canvas')) {
 		clothesLinePos['moving'] = Date.now();
 		if (clothesLinePos['lastBX'] == undefined) {
 				clothesLinePos['lastBX'] = x;
@@ -101,7 +101,13 @@ $(document).on('touchmove', '.background', function(m) {
 			clothesLinePos['startMove'] = 'canvas';
 		}
 		if (clothesLinePos['startMove'] == 'canvas') {
-			timelineScroller({ mousediff: mouseDiff });
+
+			if (id == 'timeline') {
+				timelineScroller({ mousediff: mouseDiff });
+			}
+			else if (id == 'clockface') {
+				clockfaceScroller({ mousediff: diff });
+			}
 		}
 	}
 
@@ -134,12 +140,17 @@ $(document).on('mousewheel', '.background', function(e) {
 			clotheslineScroller(x,y,diff);
 		}
 	}
-	else if (y >= clothesLinePos['maxHeight'] && id == 'timeline') {
+	else if (y >= clothesLinePos['maxHeight'] && (id == 'timeline' || id == 'clockface')) {
 		if (clothesLinePos['startMove'] == undefined) {
 			clothesLinePos['startMove'] = 'canvas';
 		}
 		if (clothesLinePos['startMove'] == 'canvas') {
-			timelineScroller({ mousediff: diff });
+			if (id == 'timeline') {
+				timelineScroller({ mousediff: diff });
+			}
+			else if (id == 'clockface') {
+				clockfaceScroller({ mousediff: diff });
+			}
 		}
 	}
 	clothesLinePos['startMove'] = undefined;
@@ -150,6 +161,16 @@ function clotheslineScroller(x,y,diff) {
 		clothesLinePos['x'] = clothesLinePos['x'] + diff;
 		clotheslineHanger(wardrobe);
 	}
+}
+
+function clockfaceScroller(data) {
+	if (data.mousediff < 0) {
+		localStorage.setItem('scrollPositioner', 	localStorage.getItem('scrollPositioner') * 1.05);
+	}
+	else {
+		localStorage.setItem('scrollPositioner', 	localStorage.getItem('scrollPositioner') * .95);
+	}
+	graphicalize(response);
 }
 
 function timelineScroller(data) {

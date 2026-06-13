@@ -9,7 +9,7 @@ function appointmentEventMaker(appts,sort) {
 			$.each(v[val],function(numero,value) {
 				if (value.age_percent) {
 					var minute = numeral(60 * (value.age_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.age.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -21,7 +21,7 @@ function appointmentEventMaker(appts,sort) {
 				}
 				if (value.millenium_percent) {
 					var minute = numeral(60 * (value.millenium_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.decade.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -33,7 +33,7 @@ function appointmentEventMaker(appts,sort) {
 				}
 				if (value.decade_percent) {
 					var minute = numeral(60 * (value.decade_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.decade.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -45,7 +45,7 @@ function appointmentEventMaker(appts,sort) {
 				}
 				if (value.year_percent) {
 					var minute = numeral(60 * (value.year_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.month.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -57,7 +57,7 @@ function appointmentEventMaker(appts,sort) {
 				}
 				if (value.month_percent) {
 					var minute = numeral(60 * (value.month_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.month.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -69,7 +69,7 @@ function appointmentEventMaker(appts,sort) {
 				}
 				if (value.week_percent) {
 					var minute = numeral(60 * (value.week_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.week.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -81,7 +81,7 @@ function appointmentEventMaker(appts,sort) {
 				}
 				if (value.day_percent) {
 					var minute = numeral(60 * (value.day_percent)).format('0');
-					var hour = moment((value.timestamp)).format('h');
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 						appointment_events.day.push({
 							'minute': minute,
 							'timestamp': value.timestamp, 
@@ -92,8 +92,10 @@ function appointmentEventMaker(appts,sort) {
 						});
 				}
 				if (value.hour_percent) {
-					var minute = moment((value.timestamp)).format('m');
-					var hour = moment((value.timestamp)).format('h');
+					console.log(value);
+//					var minute = moment(numeral(value.timestamp).value()).format('m');
+					var minute = numeral(60 * (value.hour_percent)).format(0);
+					var hour = moment(numeral(value.timestamp).value()).format('h');
 					appointment_events.hour.push({
 						'minute': minute,
 						'hour': hour,
@@ -124,29 +126,8 @@ function appointmentEventMaker(appts,sort) {
 var lastY;
 $(document).ready(function() {
 	localStorage.setItem('scrollPositioner', .4);
-	document.getElementById('clockface').addEventListener('wheel',function(event){
-		if (event.wheelDelta > 0) {
-			localStorage.setItem('scrollPositioner', 	localStorage.getItem('scrollPositioner') * 1.05);
-		}
-		else {
-			localStorage.setItem('scrollPositioner', 	localStorage.getItem('scrollPositioner') * .95);
-		}
-
-		calculator();
-		return false; 
-	}, false);
-	document.getElementById('clockface').addEventListener('wheel',function(event){
-		if (event.touches[0].clientY > lastY) {
-			localStorage.setItem('scrollPositioner', 	localStorage.getItem('scrollPositioner') * 1.05);
-		}
-		else {
-			localStorage.setItem('scrollPositioner', 	localStorage.getItem('scrollPositioner') * .95);
-		}
-		lastY = event.touches[0].clientY > lastY ;
-		calculator();
-		return false; 
-	}, false);
 });
+
 var appPosition;
 function clockfacePrinter(appts) {
 	appPosition = [];
@@ -157,7 +138,7 @@ function clockfacePrinter(appts) {
 	canvas.width = $(window).width() ;
 	canvas.height = $(window).height();
 
-	var outer = canvas.height * (	localStorage.getItem('scrollPositioner'));
+	var outer = (canvas.height - 95 ) * (	localStorage.getItem('scrollPositioner'));
 	var appointment_events = appointmentEventMaker(appts,'size');
 	var d = Date.now();
 	var day = moment(d).format('d');
@@ -166,14 +147,13 @@ function clockfacePrinter(appts) {
 	var min = moment(d).format('m');
 	var second = moment(d).format('s');
 	var radius;
-	var height = canvas.height / 2;
+	var height = canvas.height / 2 + (130 /2);
 	var width = canvas.width / 2;
 	ctx.font = "300 42px Arial";
 	ctx.fillStyle = '#566778';
-
 	ctx.font = "400 20px Arial";
 	$.each([.999,.6,.5,.4,.3,.2],function(i,v) {
-		radius = (outer * v);
+		radius = (outer * v * .9);
 		ctx.beginPath();
 		ctx.lineWidth = 8;
 		ctx.stroke();
@@ -183,7 +163,7 @@ function clockfacePrinter(appts) {
 		ctx.save('b');
 		ctx.translate(width, height);
 
-		for(num = 1; num <= 60; num++) {
+		for(num = 59; num > 0; num--) {
 			ctx.beginPath();
 			ang = num * Math.PI / 30;
 			ctx.rotate(ang);
@@ -239,12 +219,12 @@ function clockfacePrinter(appts) {
 			if (i == 1) {
 				new_arr = $.grep(appointment_events.day, function(n, i){ 
 					ball_size = 60;
-					return n.minute == num;
+					return (60 - n.minute) == num;
 				});
 			}
 			if (i == 0) {
 				new_arr = $.grep(appointment_events.hour, function(n, i){
-					return n.minute == num;
+					return (60 - n.minute) == num;
 				});
 				ball_size = 130;
 			}
@@ -280,7 +260,11 @@ function clockfacePrinter(appts) {
 			if ((num % 5) == 0 && i == 0) {
 				ctx.font = "700 32px Arial";
 				ctx.fillStyle = '#566778';
-				ctx.fillText((num / 5), -(Math.PI * 2), 0);
+				var number = num
+				if (scope == 'day') {
+					number = (num / 2.5);
+				}
+				ctx.fillText(number, -(Math.PI * 2), 0);
 				ctx.arc(0, 0, 32, (Math.PI * 2),0, true);
 			}
 			ctx.rotate(ang);

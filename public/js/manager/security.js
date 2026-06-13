@@ -41,6 +41,13 @@ $(document).on('click', '#padlock_delete', function() {
 	}
 });
 
+$(document).on('change', '#padlock_contexts', function() {
+	var contexts = $(this).val();
+	console.log(contexts);
+	contexts = JSON.stringify(contexts); 
+	settingSetter({ 'app': '__president', 'setting': 'padlock_contexts', 'value': contexts });
+});
+
 
 $(document).on('click', '.padlock_jog_wheel',function(e) {
 	var timestamp = Date.now();

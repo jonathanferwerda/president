@@ -1934,11 +1934,9 @@ sub device_lister() {
 			chip_ids => $jchips
 		};
 		if (scalar @my_device == 0 || scalar @{$devices} == 0) {
-			$log->info('never seen');
 			&subs::db_insert('devices', $me);
 		}
 		else {
-			$log->info('been seen');
 			&subs::db_update('devices', { chip_ids => $jchips, address => $json_address, timestamp => $timestamp }, { hostname => $hostname, uname => $uname });
 		}
 	}
@@ -2207,9 +2205,9 @@ my $returner = '';
 	if ($device eq 'mobile') {
 		my $timestamp = &subs::rightNow();
 		my $c = app->build_controller;
-		$gb::suds = &suds_grabber();
+		my $suds = &suds_grabber();
 		$c->session('suds' => $gb::suds);
-		my $json_list = `termux-sms-list -l 100 --message-sort-order="date DESC"` || '[]';
+		my $json_list = `termux-sms-list -l 10 --message-sort-order="date DESC"` || '[]';
 		my $list = decode_json $json_list;
 		foreach my $l (grep { $_->{'type'} eq 'draft' || $_->{'type'} eq 'sent' || $_->{'type'} eq 'inbox' } @{$list}) {
 			my $time = &subs::ago_calc($l->{'received'},$timestamp);
@@ -2217,13 +2215,12 @@ my $returner = '';
 			$phone =~ s/\D+//gi;
 			$phone =~ s/^1//;
 			$returner .= "Phone is " . $phone . "\n";
-		#	$log->info(Dumper $l);
 			my $res = &subs::db_query('select app from settings where setting = ? and value like ? and device = ?', 'phone', '%' . $phone, &subs::device_setter())->hashes;
 			foreach my $r ( @{$res} ) {
 				my $chats = &subs::db_select('mailbox', undef, { phone => $phone, timestamp => $time })->hashes;
 				if ( scalar @{$chats} == 0) {
 					$l->{'body'} =~ s/[^\x00-\x7F]+//gi;
-					my $message = &subs::note_encrypter($gb::suds,$l->{'body'});
+					my $message = &subs::note_encrypter($suds,$l->{'body'});
 					my $sender = &subs::format_name($r->{'app'});
 					&subs::db_insert('mailbox', {
 						uuid => &subs::random_string_creator(44),
@@ -2245,7 +2242,7 @@ my $returner = '';
 						app => &subs::unformat_name($r->{'app'}),
 						timestamp => $time || $timestamp,
 						type => 'sms',
-						notes => &subs::note_encrypter($c->session('suds'),&subs::format_name($l->{'type'}) . ": " . $l->{'body'}),
+						notes => &subs::note_encrypter($suds,&subs::format_name($l->{'type'}) . ": " . $l->{'body'}),
 						duration => 5000
 					});
 				}
@@ -2594,7 +2591,7 @@ sub setting_setter() {
 		}
 	}
 
-	my $old_set = &db_delete('settings', { app => $app, setting => $setting, device => $dev, subsetting => $subsetting });
+	my $old_set = eval { return &db_delete('settings', { app => $app, setting => $setting, device => $dev, subsetting => $subsetting }) };
 	&db_insert('settings', {
 		app => $app,
 		timestamp => $timestamp,
@@ -3208,7 +3205,7 @@ our $database;
 sub database_grabber() {
 	my $connection = shift || '';
 	my $server_time = &rightNow();
-	if ($database_holder->{'server_time'} && $server_time <= $database_holder->{'server_time'} + 300 && $connection ne 'new') {
+	if ($database_holder->{'server_time'} && $server_time <= $database_holder->{'server_time'} + 700 && $connection ne 'new') {
 		$database_holder->{'server_time'} = $server_time;
 		if (-e $database_holder->{'database'}) {
 			$database_holder->{'sql'} = Mojo::SQLite->new('sqlite:' . $database_holder->{'database'});
@@ -3286,8 +3283,6 @@ sub db_delete() {
 		$success = $db->delete($table, $params);
 	}
 	else {
-		$log->info('Bad Delete ' . $table);
-		$log->info(Dumper $params);
 	}
 	return $success;
 }
@@ -3631,7 +3626,7 @@ sub headless_browser() {
 				}
 				my $recurrence = &time_abbrev_translator($rw->{'value'}) || '1M';
 
-				if (&subs::rightNow() - $last_run + $headless_timeout > $recurrence) {
+				if (&subs::rightNow() - $last_run > $recurrence) {
 
 					my ($window,$internal_url,$uuid,$timestamp) = &Manager::website_grabber({ 
 						app => $app, 
@@ -3709,7 +3704,6 @@ sub telephone_call_log_check() {
 
 
 		my $phone = &subs::db_query('select * from settings where setting=? and value like ?', 'phone', '%' . $number)->hashes->[0];
-		$log->info('new call from ' . $number . ' ' . $phone->{'app'} . ' ' . $call->{'phone_number'});
 
 		if ($phone->{'app'}) {
 			my $appts = &subs::db_query('select * from appointments where app=? and timestamp = ?', $phone->{'app'}, $timestamp)->hashes;
@@ -3974,24 +3968,18 @@ sub log_reader_file_preparer() {
 
 sub remote_machine_negotiator() {
 	my $data = shift;
-	$log->info(Dumper $data);
 	$gb::suds = &suds_grabber();
-	$log->info('before c');
 	my $c = app->build_controller;
-	$log->info('after c');
 	$c->session('suds' => $gb::suds);
 	$c->session('gimme' => $data->{'gimme'});
 
 
 	my $remote_upgrade = &subs::setting_grabber({ app => '__president', setting => 'remote_upgrade' });
 	my $remote_connect_timer =  &subs::setting_grabber({ app => '__president', setting => 'remote_connect_timer' }) || 0;
-	$log->info($remote_upgrade . ' ' . $remote_connect_timer);
 	if ($remote_connect_timer + (60 * 7 * 1000) < &subs::rightNow()) {
-		$log->info('setting remote upgrade to null');
 		&subs::setting_setter({ app => '__president', setting => 'remote_upgrade', value => '' });
 	}
 	if ($remote_upgrade ne 'running' && $remote_connect_timer + 10000 < &subs::rightNow()) {
-		$log->info('running remote machine reconnector');
 		&Manager::remote_machine_reconnector($c);
 	}
 	#&system_monitor({
@@ -4026,23 +4014,15 @@ sub system_monitor() {
 
 sub suds_grabber() {
 	my $duty_time = &subs::setting_grabber({ app => '__president', setting => 'remote_duty' });
-	$log->info('DT ' . $duty_time . ' GBDT: ' . $gb::duty_time);
-	if ($duty_time eq '' || !$duty_time || $duty_time != $gb::duty_time || !$gb::duty_time) {
-		$log->info('no dt');
+	if (( !$gb::suds || $duty_time eq '' || !$duty_time || $duty_time != $gb::duty_time || !$gb::duty_time)) {
 		my ($db,$database,$sql) = &subs::database_grabber('new');
-		if (!$gb::duty_time) {
-			my $duty_file = &subs::home('~/.president/on_duty');
-			$gb::duty_time = read_file($duty_file);
-			$log->info('writing duty time');
-		}
-		$log->info('about to set');
+
+	#	my $duty_file = &subs::home('~/.president/on_duty');
+	#	$gb::duty_time = read_file($duty_file);
 		&subs::setting_setter({ app => '__president', setting => 'remote_duty', value => $gb::duty_time });
-		$log->info('about to tick');
-		my $tick = &subs::db_query('select * from tickets where status=? order by server_time desc', 'active');
+		my $tick = &subs::db_query('select verification,secret,password,suds from tickets where status=? order by server_time desc', 'active');
 		my $ticke = $tick->hashes;
 		my $ticket = $ticke->[0];
-		$log->info('got ticket');
-		$log->info(Dumper $ticket);
 		my $v = $ticket->{'verification'};
 		my $secret = $ticket->{'secret'};
 		my $ver = url_unescape `echo "$secret" | base64 --decode`;
@@ -4051,9 +4031,8 @@ sub suds_grabber() {
 		$secret = &subs::decrypter($vrai->{'p'},&subs::db_select('security', ['credential'], { level => 1 })->hash->{credential});
 		my $suds = &subs::note_decrypter($vrai->{'p'}, $ticket->{'suds'});
 		$gb::suds = $suds;
-		$log->info('new suds: ' . $suds);
+		return $suds;
 	}
-	$log->info('suds bypassed ');
 	return $gb::suds;
 }
 

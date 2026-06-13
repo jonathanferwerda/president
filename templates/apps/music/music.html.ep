@@ -1,5 +1,8 @@
 % title 'Music Player';
 <% use Mojo::JSON qw/encode_json decode_json/; %>
+<% my $padlock_sighting = eval { return decode_json &subs::setting_grabber({app => '__president', setting => 'padlock_contexts' }) } || [];
+	@{$padlock_sighting} = grep { $_ eq 'music' } @{$padlock_sighting};
+%>
 <% my $background_colour = &subs::setting_grabber({ app => 'misc', setting => 'manager_background_colour'}); %>
 <div id="music" background_colour="<%= $background_colour %>" current_track="<%= $crate->{'current_track'} %>" style="max-height:100%;width:100%;background-color:<%= $background_colour %>" unlock="<%= $crate->{'settings'}->{'combo_unlock'} %>">
 	<div id="music_player_data" style="display:none;">
@@ -25,7 +28,9 @@
 			</span>
 
 		</div>
-		<img src="/images/jbuttons/padlock unlock.png" class="hover little_thumb music music_lock" id="music_padlock_toggle" style="position:absolute;top:0px;right:60px;<% if ($crate->{'settings'}->{'combo_unlock'} =~ /[a-zA-Z0-9]/gi) { %>background-color:red;<% } %>">
+		<% if (scalar @{$padlock_sighting} > 0) { %>
+			<img src="/images/jbuttons/padlock unlock.png" class="hover little_thumb music music_lock" id="music_padlock_toggle" style="position:absolute;top:0px;right:60px;<% if ($crate->{'settings'}->{'combo_unlock'} =~ /[a-zA-Z0-9]/gi) { %>background-color:red;<% } %>">
+		<% } %>
 		<image src="/images/decipherable/gear.png" class="little_thumb hover" id="music_configuration_toggle" style="position:absolute;top:0px;right:4px;">
 	</div>
 	<div id="music_library">
